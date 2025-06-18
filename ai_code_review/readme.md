@@ -7,13 +7,13 @@ D:\workspace\dotnet\Server_DotNetCore
 --api-base
 https://api.deepseek.com
 --model
-deepseek-reasoner
+deepseek-chat
 --api-key
 your-key
 --base
-develop
+origin/develop
 --feature
-feature/yintianwen/15026_导出客诉时新增表单字段的数据
+your_feature_branch
 --output-diff
 diff_output.txt
 ```
