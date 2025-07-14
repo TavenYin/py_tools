@@ -103,10 +103,6 @@ class GitDiffReviewer:
         获取 feature 分支相对于 base 分支的增量修改
         使用 merge_base 确保只获取 feature 分支独有的变更
         """
-        # 先执行 git fetch
-        self.repo.git.fetch()
-        logger.info("git fetch 完成")
-
         try:
             # 获取 merge base（分叉点）
             merge_bases = self.repo.merge_base(self.base_branch, self.feature_branch)
@@ -130,10 +126,18 @@ class GitDiffReviewer:
             processed_files = set()
 
             for diff_item in diff_index:
-                try:
+                # 得到文件路径
+                if diff_item.renamed_file:
+                    file_path = f"{diff_item.a_path} -> {diff_item.b_path}"
+                else:
                     file_path = diff_item.b_path if diff_item.b_path else diff_item.a_path
+                try:
+                    # 检查文件路径是否存在
+                    if not file_path:
+                        logger.warning("跳过无路径的差异项")
+                        continue
 
-                    # 跳过已处理文件（避免重复）
+                    # 跳过已处理文件
                     if file_path in processed_files:
                         continue
                     processed_files.add(file_path)
@@ -187,6 +191,10 @@ class GitDiffReviewer:
         if blob is None:
             return None
 
+        # 检查是否为二进制文件
+        if self._is_binary_file(blob):
+            return f"[二进制文件: {blob.path}]"
+
         raw_data = blob.data_stream.read()
         for encoding in encodings:
             try:
@@ -195,6 +203,18 @@ class GitDiffReviewer:
                 continue
         logger.warning(f"无法解码文件 {blob.path}，尝试使用 latin1")
         return raw_data.decode('latin1', errors='replace')  # 最终回退
+
+    def _is_binary_file(self, blob):
+        """检查是否为二进制文件"""
+        if not blob or not blob.path:
+            return False
+
+        # 检查文件扩展名
+        binary_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.pdf', '.zip', '.exe', '.dll', '.so', '.dylib', '.bin'}
+        if any(blob.path.lower().endswith(ext) for ext in binary_extensions):
+            return True
+
+        return False
 
     def review_code(self, diff_content):
         """使用AI接口审查代码"""
