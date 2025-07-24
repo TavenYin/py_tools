@@ -103,6 +103,10 @@ class GitDiffReviewer:
         获取 feature 分支相对于 base 分支的增量修改
         使用 merge_base 确保只获取 feature 分支独有的变更
         """
+        # 先执行 git fetch
+        self.repo.git.fetch()
+        logger.info("git fetch 完成")
+
         try:
             # 获取 merge base（分叉点）
             merge_bases = self.repo.merge_base(self.base_branch, self.feature_branch)
